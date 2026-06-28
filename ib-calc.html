@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IB. Calc</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5e4; border-radius: 3px; }
+  input, select, button { font-family: inherit; }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ─── ICON SVG HELPER ──────────────────────────────────────────────────────────
+const Icons = {
+  new: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6",
+  open: "M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z",
+  save: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z M17 21v-8H7v8 M7 3v5h8",
+  undo: "M3 7v6h6 M3.5 13A9 9 0 1 0 6 6.3L3 13",
+  redo: "M21 7v6h-6 M20.5 13A9 9 0 1 1 18 6.3L21 13",
+  copy: "M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1",
+  paste: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z",
+  cut: "M6 20L20 4 M6 4l8 8 M14.5 9.5L20 4 M6 20c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z M18 20c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z",
+  bold: "M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z",
+  italic: "M19 4h-9 M14 20H5 M15 4L9 20",
+  underline: "M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3 M4 21h16",
+  alignLeft: "M17 10H3 M21 6H3 M21 14H3 M17 18H3",
+  alignCenter: "M18 10H6 M21 6H3 M21 14H3 M18 18H6",
+  alignRight: "M21 10H7 M21 6H3 M21 14H3 M21 18H7",
+  sort: "M3 6h18 M7 12h10 M11 18h2",
+  filter: "M22 3H2l8 9.46V19l4 2v-8.54z",
+  search: "M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z",
+  chart: "M18 20V10 M12 20V4 M6 20v-6",
+  plus: "M12 5v14 M5 12h14",
+  x: "M18 6L6 18 M6 6l12 12",
+  chevDown: "M6 9l6 6 6-6",
+  lock: "M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z M7 11V7a5 5 0 0 1 10 0v4",
+  star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+  moon: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+  sun: "M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42 M12 5a7 7 0 1 0 0 14A7 7 0 0 0 12 5z",
+  trash: "M3 6h18 M19 6l-1 14H6L5 6 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2",
+  download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+  upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12",
+  settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
+  user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  check: "M20 6L9 17l-5-5",
+  info: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 16v-4 M12 8h.01",
+  border: "M3 3h18v18H3z M3 9h18 M3 15h18 M9 3v18 M15 3v18",
+  paint: "M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z",
+  freeze: "M3 12h18 M12 3v18",
+};
+
+function icon(name, size=16, stroke='currentColor', fill='none', strokeWidth=1.5) {
+  const d = Icons[name] || '';
+  const paths = d.split(' M ').map((p,i) => i===0 ? p : 'M '+p);
+  const pathsHtml = paths.map(p => `<path d="${p}"/>`).join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${pathsHtml}</svg>`;
+}
+
+// ─── FORMULA ENGINE ───────────────────────────────────────────────────────────
+const ROWS = 50, COLS = 26;
+
+function colIndexToLetter(idx) {
+  let s = ''; idx += 1;
+  while (idx > 0) { let r = (idx-1)%26; s = String.fromCharCode(65+r)+s; idx = Math.floor((idx-1)/26); }
+  return s;
+}
+function cellId(row, col) { return `${colIndexToLetter(col)}${row+1}`; }
+function parseRef(ref) {
+  const m = ref.match(/^([A-Z]+)(\d+)$/i);
+  if (!m) return null;
+  let col = 0;
+  for (const c of m[1].toUpperCase()) col = col*26 + c.charCodeAt(0)-64;
+  return { row: parseInt(m[2])-1, col: col-1 };
+}
+function evaluateFormula(formula, cells, depth=0) {
+  if (depth > 10) return '#CIRC!';
+  const expr = formula.slice(1).trim();
+  const getVal = (ref) => {
+    const pos = parseRef(ref);
+    if (!pos) return 0;
+    const v = cells[pos.row]?.[pos.col] ?? '';
+    if (typeof v === 'string' && v.startsWith('=')) return evaluateFormula(v, cells, depth+1);
+    const n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
+  };
+  const expandRange = (r1, r2) => {
+    const p1 = parseRef(r1), p2 = parseRef(r2);
+    if (!p1 || !p2) return [];
+    const vals = [];
+    for (let r = Math.min(p1.row,p2.row); r<=Math.max(p1.row,p2.row); r++)
+      for (let c = Math.min(p1.col,p2.col); c<=Math.max(p1.col,p2.col); c++)
+        vals.push(getVal(cellId(r,c)));
+    return vals;
+  };
+  try {
+    const fnMatch = expr.match(/^(SUM|AVERAGE|AVG|MIN|MAX|COUNT|IF|COUNTA|ROUND)\s*\((.+)\)$/i);
+    if (fnMatch) {
+      const fn = fnMatch[1].toUpperCase();
+      const args = fnMatch[2];
+      if (fn === 'IF') {
+        const parts = args.split(',');
+        if (parts.length < 2) return '#ARG!';
+        const cond = evaluateExpr(parts[0].trim(), cells, depth);
+        return cond ? evaluateExpr(parts[1].trim(), cells, depth) : (parts[2] ? evaluateExpr(parts[2].trim(), cells, depth) : 0);
+      }
+      if (fn === 'ROUND') {
+        const parts = args.split(',');
+        const v = evaluateExpr(parts[0].trim(), cells, depth);
+        const dec = parts[1] ? parseInt(parts[1].trim()) : 0;
+        return Math.round(v * Math.pow(10,dec)) / Math.pow(10,dec);
+      }
+      const vals = [];
+      const rangeReg = /([A-Z]+\d+):([A-Z]+\d+)/gi;
+      let argsCopy = args;
+      let rm;
+      const usedRanges = [];
+      while ((rm = rangeReg.exec(args)) !== null) {
+        expandRange(rm[1], rm[2]).forEach(v => vals.push(v));
+        usedRanges.push(rm[0]);
+      }
+      let processed = args;
+      for (const ur of usedRanges) processed = processed.replace(ur, '');
+      const remaining = processed.replace(/[^A-Za-z0-9,.\s]/g,'');
+      for (const part of remaining.split(',')) {
+        const t = part.trim();
+        if (!t) continue;
+        if (/^[A-Z]+\d+$/i.test(t)) vals.push(getVal(t));
+        else { const n = parseFloat(t); if (!isNaN(n)) vals.push(n); }
+      }
+      const nums = vals.filter(v => !isNaN(v));
+      if (fn==='SUM') return nums.reduce((a,b)=>a+b,0);
+      if (fn==='AVERAGE'||fn==='AVG') return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : 0;
+      if (fn==='MIN') return nums.length ? Math.min(...nums) : 0;
+      if (fn==='MAX') return nums.length ? Math.max(...nums) : 0;
+      if (fn==='COUNT') return nums.length;
+      if (fn==='COUNTA') return vals.filter(v=>v!==''&&v!==null&&v!==undefined).length;
+    }
+    return evaluateExpr(expr, cells, depth);
+  } catch { return '#ERR!'; }
+}
+function evaluateExpr(expr, cells, depth=0) {
+  let e = expr.replace(/[A-Z]+\d+/gi, (ref) => {
+    const pos = parseRef(ref);
+    if (!pos) return '0';
+    const v = cells[pos.row]?.[pos.col] ?? 0;
+    if (typeof v === 'string' && v.startsWith('=')) return evaluateFormula(v, cells, depth+1) || 0;
+    return isNaN(parseFloat(v)) ? `"${v}"` : parseFloat(v);
+  });
+  return Function('"use strict"; return ('+e+')')();
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function emptyGrid() { return Array.from({length:ROWS}, ()=>Array(COLS).fill('')); }
+function emptyFmt()  { return Array.from({length:ROWS}, ()=>Array(COLS).fill(null)); }
+
+const TEMPLATES = {
+  blank: { name:'Blank', data: emptyGrid() },
+  budget: { name:'Personal Budget', data: (() => {
+    const g=emptyGrid(), s=(r,c,v)=>g[r][c]=v;
+    s(0,0,'Personal Budget'); s(1,0,'Month:'); s(1,1,'January');
+    s(3,0,'Category'); s(3,1,'Budgeted'); s(3,2,'Actual'); s(3,3,'Difference');
+    [['Housing',1200,1150],['Food',400,420],['Transport',200,185],['Utilities',150,160],['Entertainment',100,90],['Savings',300,300]].forEach(([n,b,a],i)=>{
+      s(4+i,0,n); s(4+i,1,b); s(4+i,2,a); s(4+i,3,`=B${5+i}-C${5+i}`);
+    });
+    s(11,0,'Total'); s(11,1,'=SUM(B5:B10)'); s(11,2,'=SUM(C5:C10)'); s(11,3,'=SUM(D5:D10)');
+    return g;
+  })() },
+  sales: { name:'Sales Tracker', data: (() => {
+    const g=emptyGrid(), s=(r,c,v)=>g[r][c]=v;
+    s(0,0,'Sales Tracker'); s(2,0,'Month'); s(2,1,'Product'); s(2,2,'Units'); s(2,3,'Price'); s(2,4,'Revenue');
+    [['Jan','Widget A',50,29.99],['Jan','Widget B',30,49.99],['Feb','Widget A',65,29.99],['Feb','Widget B',42,49.99]].forEach(([m,p,u,pr],i)=>{
+      s(3+i,0,m); s(3+i,1,p); s(3+i,2,u); s(3+i,3,pr); s(3+i,4,`=C${4+i}*D${4+i}`);
+    });
+    s(8,0,'Total Revenue'); s(8,4,'=SUM(E4:E7)');
+    return g;
+  })() },
+  grades: { name:'Student Grades', data: (() => {
+    const g=emptyGrid(), s=(r,c,v)=>g[r][c]=v;
+    s(0,0,'Student Grades'); s(2,0,'Student'); s(2,1,'Math'); s(2,2,'Science'); s(2,3,'English'); s(2,4,'Average');
+    [['Alice',88,92,85],['Bob',76,81,90],['Carol',94,88,92],['David',70,75,68]].forEach(([n,m,sc,e],i)=>{
+      s(3+i,0,n); s(3+i,1,m); s(3+i,2,sc); s(3+i,3,e); s(3+i,4,`=AVERAGE(B${4+i}:D${4+i})`);
+    });
+    return g;
+  })() },
+  inventory: { name:'Inventory Tracker', data: (() => {
+    const g=emptyGrid(), s=(r,c,v)=>g[r][c]=v;
+    s(0,0,'Inventory Tracker'); s(2,0,'Item'); s(2,1,'SKU'); s(2,2,'Stock'); s(2,3,'Reorder At'); s(2,4,'Status');
+    [['Laptop','LP001',15,5],['Mouse','MS002',42,10],['Keyboard','KB003',3,10],['Monitor','MN004',8,3]].forEach(([n,sku,st,ro],i)=>{
+      s(3+i,0,n); s(3+i,1,sku); s(3+i,2,st); s(3+i,3,ro); s(3+i,4,`=IF(C${4+i}<D${4+i},"Reorder","OK")`);
+    });
+    return g;
+  })() },
+};
+
+// ─── APP STATE ────────────────────────────────────────────────────────────────
+const state = {
+  dark: false,
+  view: 'dashboard',
+  sheets: [{ id:1, name:'Sheet1', data:emptyGrid(), fmt:emptyFmt() }],
+  activeSheet: 0,
+  selected: { row:0, col:0 },
+  selection: null,
+  editCell: null,
+  editVal: '',
+  formulaBar: '',
+  history: [],
+  future: [],
+  clipboard: null,
+  fontSize: 13,
+  notification: null,
+  activeMenu: null,
+  searchTerm: '',
+  payments: [
+    { id:1, name:'Tendai Moyo', email:'tendai@example.com', ref:'AIR-20240601-001', date:'2026-06-20', status:'pending' },
+    { id:2, name:'Chipo Ndlovu', email:'chipo@example.com', ref:'AIR-20240601-002', date:'2026-06-22', status:'pending' },
+  ],
+  paymentForm: { name:'', email:'', ref:'', date:'' },
+  isPremium: false,
+  colWidths: Array(COLS).fill(100),
+  rowHeights: Array(ROWS).fill(24),
+  frozenRows: 0,
+  frozenCols: 0,
+  showChart: false,
+  chartType: 'bar',
+  adminPw: '',
+  adminAuth: false,
+  renaming: null,
+  renameVal: '',
+  upgradeSubmitted: false,
+  upgradeForm: { name:'', email:'', ref:'', date:'' },
+};
+
+function getSheet() { return state.sheets[state.activeSheet]; }
+function getCells() { return getSheet().data; }
+function getFmt() { return getSheet().fmt; }
+
+function getDisplayVal(r, c) {
+  const cells = getCells();
+  const v = cells[r]?.[c] ?? '';
+  if (typeof v === 'string' && v.startsWith('=')) {
+    const res = evaluateFormula(v, cells);
+    if (typeof res === 'number') return isNaN(res) ? '#NAN!' : Number.isFinite(res) ? (Math.round(res*1e10)/1e10).toString() : '#INF!';
+    return res?.toString() ?? '';
+  }
+  return v?.toString() ?? '';
+}
+
+function notify(msg, type='info') {
+  state.notification = { msg, type };
+  render();
+  clearTimeout(state._notifyTimer);
+  state._notifyTimer = setTimeout(() => { state.notification = null; render(); }, 2500);
+}
+
+function pushHistory(data) {
+  state.history = [...state.history.slice(-30), JSON.stringify(data)];
+  state.future = [];
+}
+function updateCells(newData) {
+  pushHistory(getCells());
+  state.sheets = state.sheets.map((sh,i) => i===state.activeSheet ? {...sh, data:newData} : sh);
+}
+function updateFmt(newFmt) {
+  state.sheets = state.sheets.map((sh,i) => i===state.activeSheet ? {...sh, fmt:newFmt} : sh);
+}
+
+function commitEdit() {
+  if (state.editCell === null) return;
+  const { row, col } = state.editCell;
+  const cells = getCells();
+  const newData = cells.map(r=>[...r]);
+  newData[row][col] = state.editVal;
+  updateCells(newData);
+  state.editCell = null;
+  state.editVal = '';
+}
+
+function startEdit(row, col) {
+  commitEdit();
+  state.selected = { row, col };
+  const v = getCells()[row]?.[col] ?? '';
+  state.editCell = { row, col };
+  state.editVal = v;
+  state.formulaBar = v;
+}
+
+function handleCopy() {
+  const cells = getCells();
+  const r1=state.selection?.r1??state.selected.row, c1=state.selection?.c1??state.selected.col;
+  const r2=state.selection?.r2??state.selected.row, c2=state.selection?.c2??state.selected.col;
+  const data=[];
+  for(let r=r1;r<=r2;r++){const row=[];for(let c=c1;c<=c2;c++)row.push(cells[r]?.[c]??'');data.push(row);}
+  state.clipboard = { data, r1, c1 };
+  notify('Copied to clipboard');
+}
+function handlePaste() {
+  if(!state.clipboard) return;
+  const cells = getCells();
+  const newData = cells.map(r=>[...r]);
+  state.clipboard.data.forEach((row,dr)=>row.forEach((val,dc)=>{const r=state.selected.row+dr,c=state.selected.col+dc;if(r<ROWS&&c<COLS)newData[r][c]=val;}));
+  updateCells(newData); notify('Pasted');
+}
+function handleCut() {
+  handleCopy();
+  const cells = getCells();
+  const newData = cells.map(r=>[...r]);
+  newData[state.selected.row][state.selected.col]='';
+  updateCells(newData);
+}
+function handleUndo() {
+  if(!state.history.length) return;
+  const prev = JSON.parse(state.history[state.history.length-1]);
+  state.future = [JSON.stringify(getCells()), ...state.future];
+  state.history = state.history.slice(0,-1);
+  state.sheets = state.sheets.map((sh,i)=>i===state.activeSheet?{...sh,data:prev}:sh);
+}
+function handleRedo() {
+  if(!state.future.length) return;
+  const next = JSON.parse(state.future[0]);
+  state.history = [...state.history, JSON.stringify(getCells())];
+  state.future = state.future.slice(1);
+  state.sheets = state.sheets.map((sh,i)=>i===state.activeSheet?{...sh,data:next}:sh);
+}
+function handleSave() {
+  localStorage.setItem('ibcalc_sheets', JSON.stringify(state.sheets));
+  notify('Saved to browser storage ✓','success');
+}
+function handleLoad() {
+  const saved = localStorage.getItem('ibcalc_sheets');
+  if(saved){state.sheets=JSON.parse(saved);notify('Loaded saved data ✓','success');}
+  else notify('No saved data found');
+}
+function handleExportCSV() {
+  const cells = getCells();
+  const csv = cells.map(row=>row.map(c=>`"${(c??'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`${getSheet().name}.csv`;a.click();
+  notify('Exported as CSV ✓','success');
+}
+
+function applyFmt(prop, val) {
+  const fmt = getFmt();
+  const newFmt = fmt.map(r=>r.map(f=>f?{...f}:null));
+  const r1=state.selection?.r1??state.selected.row, c1=state.selection?.c1??state.selected.col;
+  const r2=state.selection?.r2??state.selected.row, c2=state.selection?.c2??state.selected.col;
+  for(let r=r1;r<=r2;r++) for(let c=c1;c<=c2;c++){if(!newFmt[r][c])newFmt[r][c]={};newFmt[r][c][prop]=val;}
+  updateFmt(newFmt);
+}
+
+function addSheet() {
+  const id=Date.now(),name=`Sheet${state.sheets.length+1}`;
+  state.sheets=[...state.sheets,{id,name,data:emptyGrid(),fmt:emptyFmt()}];
+  state.activeSheet=state.sheets.length-1;
+}
+function deleteSheet(idx) {
+  if(state.sheets.length===1){notify('Cannot delete the only sheet');return;}
+  state.sheets=state.sheets.filter((_,i)=>i!==idx);
+  state.activeSheet=Math.max(0,idx-1);
+}
+function loadTemplate(key) {
+  const tpl=TEMPLATES[key]; if(!tpl) return;
+  state.sheets=state.sheets.map((sh,i)=>i===state.activeSheet?{...sh,data:tpl.data.map(r=>[...r]),fmt:emptyFmt()}:sh);
+  state.view='spreadsheet';
+  notify(`Loaded template: ${tpl.name}`,'success');
+}
+
+// ─── THEME ────────────────────────────────────────────────────────────────────
+function th() {
+  return state.dark ? {
+    bg:'#0f1117',surface:'#1a1d27',border:'#2a2d3e',text:'#e8eaf0',muted:'#6b7280',
+    accent:'#6366f1',accentMuted:'#4338ca',headerBg:'#13161f',rowBg:'#1a1d27',
+    altRow:'#15182200',selBg:'#6366f130',selBorder:'#6366f1',
+    toolbarBg:'#13161f',menuBg:'#1a1d27',gridBg:'#0f1117',
+  } : {
+    bg:'#f0f2f8',surface:'#ffffff',border:'#d1d5e4',text:'#1a1d2e',muted:'#6b7280',
+    accent:'#6366f1',accentMuted:'#4f46e5',headerBg:'#f8f9fc',rowBg:'#ffffff',
+    altRow:'#f8f9fc55',selBg:'#6366f118',selBorder:'#6366f1',
+    toolbarBg:'#f8f9fc',menuBg:'#ffffff',gridBg:'#f0f2f8',
+  };
+}
+
+// ─── RENDER HELPERS ───────────────────────────────────────────────────────────
+function s(obj) {
+  return Object.entries(obj).map(([k,v])=>`${k.replace(/([A-Z])/g,'-$1').toLowerCase()}:${v}`).join(';');
+}
+
+function renderChart() {
+  const t = th();
+  const cells=getCells();
+  const r1=state.selection?.r1??state.selected.row, c1=state.selection?.c1??state.selected.col;
+  const r2=state.selection?.r2??Math.min(state.selected.row+5,ROWS-1), c2=state.selection?.c2??state.selected.col;
+  const chartData=[];
+  for(let r=r1;r<=r2;r++){
+    const label=(cells[r]?.[c1]??`Row ${r+1}`).toString();
+    const val=parseFloat(getDisplayVal(r,c1+1))||0;
+    chartData.push({label,val});
+  }
+  const max=Math.max(...chartData.map(d=>d.val),1);
+  const w=340,h=200,pad=40;
+  if(state.chartType==='bar'){
+    const bw=(w-pad*2)/chartData.length-4;
+    const bars=chartData.map((d,i)=>{
+      const bh=((d.val/max)*(h-pad-30));
+      const x=pad+i*((w-pad*2)/chartData.length)+2, y=h-pad-bh;
+      return `<rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${t.accent}" opacity="0.8" rx="2"/>
+              <text x="${x+bw/2}" y="${h-5}" text-anchor="middle" font-size="9" fill="${t.muted}">${d.label.slice(0,8)}</text>
+              <text x="${x+bw/2}" y="${y-3}" text-anchor="middle" font-size="8" fill="${t.text}">${d.val}</text>`;
+    }).join('');
+    return `<svg width="${w}" height="${h}" style="background:${t.surface};border-radius:8px;border:1px solid ${t.border}">${bars}</svg>`;
+  }
+  if(state.chartType==='line'){
+    const pts=chartData.map((d,i)=>({x:pad+i*(w-pad*2)/Math.max(chartData.length-1,1), y:h-pad-(d.val/max)*(h-pad-30)}));
+    const path=pts.map((p,i)=>`${i===0?'M':'L'}${p.x},${p.y}`).join(' ');
+    const circles=pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="4" fill="${t.accent}"/>`).join('');
+    const labels=chartData.map((d,i)=>`<text x="${pts[i].x}" y="${h-5}" text-anchor="middle" font-size="9" fill="${t.muted}">${d.label.slice(0,8)}</text>`).join('');
+    return `<svg width="${w}" height="${h}" style="background:${t.surface};border-radius:8px;border:1px solid ${t.border}"><path d="${path}" fill="none" stroke="${t.accent}" stroke-width="2"/>${circles}${labels}</svg>`;
+  }
+  if(state.chartType==='pie'){
+    const total=chartData.reduce((a,b)=>a+b.val,0)||1;
+    const colors=['#6366f1','#ec4899','#f59e0b','#10b981','#3b82f6','#8b5cf6'];
+    let angle=-Math.PI/2; const cx=w/2,cy=h/2,r=Math.min(w,h)/2-20;
+    const slices=chartData.map((d,i)=>{
+      const slice=(d.val/total)*2*Math.PI;
+      const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+      const x2=cx+r*Math.cos(angle+slice),y2=cy+r*Math.sin(angle+slice);
+      const large=slice>Math.PI?1:0;
+      const p=`M${cx},${cy} L${x1},${y1} A${r},${r},0,${large},1,${x2},${y2}Z`;
+      angle+=slice;
+      return `<path d="${p}" fill="${colors[i%colors.length]}" opacity="0.85" stroke="${t.surface}" stroke-width="1"/>`;
+    }).join('');
+    const legend=chartData.map((d,i)=>`<rect x="${w-80}" y="${10+i*16}" width="10" height="10" fill="${colors[i%colors.length]}" rx="2"/><text x="${w-66}" y="${20+i*16}" font-size="9" fill="${t.text}">${d.label.slice(0,8)}</text>`).join('');
+    return `<svg width="${w}" height="${h}" style="background:${t.surface};border-radius:8px;border:1px solid ${t.border}">${slices}${legend}</svg>`;
+  }
+  return '';
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const t = th();
+  const cells=getCells(), fmt=getFmt(), sheet=getSheet();
+
+  // Build views
+  let mainContent = '';
+  if(state.view==='dashboard') mainContent = renderDashboard(t);
+  else if(state.view==='spreadsheet') mainContent = renderSpreadsheet(t, cells, fmt, sheet);
+  else if(state.view==='upgrade') mainContent = renderUpgrade(t);
+  else if(state.view==='admin') mainContent = renderAdmin(t);
+
+  const notifHtml = state.notification ? `
+    <div style="${s({position:'fixed',bottom:'24px',right:'24px',zIndex:'9999',padding:'12px 20px',borderRadius:'12px',background:state.notification.type==='success'?'#10b981':state.notification.type==='error'?'#ef4444':t.surface,color:state.notification.type?'#fff':t.text,boxShadow:'0 8px 30px #0003',border:`1px solid ${state.notification.type?'transparent':t.border}`,fontWeight:'600',fontSize:'14px',display:'flex',alignItems:'center',gap:'8px',animation:'slideIn .2s ease'})}">
+      ${icon(state.notification.type==='success'?'check':'info',16,state.notification.type?'#fff':t.accent)}
+      ${state.notification.msg}
+    </div>` : '';
+
+  const chartModal = state.showChart ? `
+    <div onclick="if(event.target===this){state.showChart=false;render();}" style="${s({position:'fixed',inset:'0',background:'#0008',zIndex:'999',display:'flex',alignItems:'center',justifyContent:'center'})}">
+      <div onclick="event.stopPropagation()" style="${s({background:t.surface,borderRadius:'20px',padding:'32px',boxShadow:'0 20px 60px #0005',minWidth:'420px'})}">
+        <div style="${s({display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'20px'})}">
+          <h3 style="${s({fontWeight:'700',fontSize:'18px',color:t.text,margin:'0'})}">Chart Preview</h3>
+          <div style="display:flex;gap:8px">
+            ${['bar','line','pie'].map(tp=>`<button onclick="state.chartType='${tp}';render();" style="${s({padding:'5px 14px',borderRadius:'8px',border:`1px solid ${state.chartType===tp?t.accent:t.border}`,background:state.chartType===tp?t.accent:'transparent',color:state.chartType===tp?'#fff':t.muted,cursor:'pointer',fontWeight:'600',fontSize:'13px'})}">${tp.toUpperCase()}</button>`).join('')}
+          </div>
+          <button onclick="state.showChart=false;render();" style="background:none;border:none;cursor:pointer;color:${t.muted}">${icon('x',18)}</button>
+        </div>
+        ${renderChart()}
+        <p style="color:${t.muted};font-size:12px;margin-top:12px">Select a range in the spreadsheet then open this chart to visualize your data.</p>
+      </div>
+    </div>` : '';
+
+  document.getElementById('app').innerHTML = `
+    <div style="${s({fontFamily:"'Inter','Segoe UI',system-ui,sans-serif",background:t.bg,color:t.text,minHeight:'100vh',display:'flex',flexDirection:'column'})}">
+      <input id="csv-input" type="file" accept=".csv" style="display:none" onchange="handleImportCSV(event)"/>
+      <header style="${s({display:'flex',alignItems:'center',gap:'16px',padding:'0 20px',height:'56px',background:t.surface,borderBottom:`1px solid ${t.border}`,boxShadow:'0 1px 4px #0001',position:'sticky',top:'0',zIndex:'100'})}">
+        <div onclick="state.view='dashboard';render();" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <div style="${s({width:'32px',height:'32px',borderRadius:'8px',background:`linear-gradient(135deg,${t.accent},#ec4899)`,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:'900',fontSize:'14px'})}">IB</div>
+          <span style="font-weight:800;font-size:18px;color:${t.text};letter-spacing:-0.02em">IB. <span style="color:${t.accent}">Calc</span></span>
+        </div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:4px">
+          ${[['dashboard','Home'],['spreadsheet','Spreadsheet'],['upgrade',state.isPremium?'Premium ✓':'Upgrade']].map(([v,label])=>`
+            <button onclick="state.view='${v}';render();" style="${s({padding:'6px 14px',borderRadius:'8px',border:'none',background:state.view===v?t.accent+'18':'transparent',color:state.view===v?t.accent:t.muted,cursor:'pointer',fontSize:'13px',fontWeight:state.view===v?'700':'500'})}">${label}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="state.dark=!state.dark;render();" title="${state.dark?'Light mode':'Dark mode'}" style="${s({width:'34px',height:'34px',borderRadius:'8px',border:`1px solid ${t.border}`,background:'none',cursor:'pointer',color:t.muted,display:'flex',alignItems:'center',justifyContent:'center'})}">
+            ${icon(state.dark?'sun':'moon',16)}
+          </button>
+          <div style="${s({display:'flex',alignItems:'center',gap:'8px',padding:'6px 12px',borderRadius:'10px',border:`1px solid ${t.border}`,background:t.surface})}">
+            <div style="${s({width:'24px',height:'24px',borderRadius:'50%',background:`linear-gradient(135deg,${t.accent},#ec4899)`,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:'11px',fontWeight:'700'})}">U</div>
+            <span style="font-size:13px;color:${t.muted}">${state.isPremium?'Premium':'Free'}</span>
+          </div>
+        </div>
+      </header>
+      <main style="flex:1;overflow:hidden">${mainContent}</main>
+      ${chartModal}
+      ${notifHtml}
+    </div>`;
+
+  // Re-attach keyboard listener
+  if(state.view==='spreadsheet') {
+    window.onkeydown = handleKeyDown;
+    // Re-focus grid if needed
+    const editInput = document.getElementById('cell-edit-input');
+    if(editInput) editInput.focus();
+  } else {
+    window.onkeydown = null;
+  }
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+function handleKeyDown(e) {
+  if(state.editCell!==null) {
+    if(e.key==='Enter'){commitEdit();state.selected={...state.selected,row:Math.min(state.selected.row+1,ROWS-1)};render();}
+    else if(e.key==='Escape'){state.editCell=null;state.editVal='';render();}
+    else if(e.key==='Tab'){e.preventDefault();commitEdit();state.selected={...state.selected,col:Math.min(state.selected.col+1,COLS-1)};render();}
+    return;
+  }
+  const mv=(dr,dc)=>{e.preventDefault();state.selected={row:Math.max(0,Math.min(ROWS-1,state.selected.row+dr)),col:Math.max(0,Math.min(COLS-1,state.selected.col+dc))};state.selection=null;render();};
+  if(e.key==='ArrowUp') mv(-1,0);
+  else if(e.key==='ArrowDown') mv(1,0);
+  else if(e.key==='ArrowLeft') mv(0,-1);
+  else if(e.key==='ArrowRight') mv(0,1);
+  else if(e.key==='Enter'){startEdit(state.selected.row,state.selected.col);render();}
+  else if(e.key==='Delete'||e.key==='Backspace'){const nd=getCells().map(r=>[...r]);nd[state.selected.row][state.selected.col]='';updateCells(nd);render();}
+  else if(e.ctrlKey||e.metaKey){
+    if(e.key==='c'){handleCopy();render();}
+    else if(e.key==='v'){handlePaste();render();}
+    else if(e.key==='z'){handleUndo();render();}
+    else if(e.key==='y'){handleRedo();render();}
+    else if(e.key==='s'){e.preventDefault();handleSave();}
+  }
+  else if(!e.ctrlKey&&!e.metaKey&&e.key.length===1){startEdit(state.selected.row,state.selected.col);state.editVal=e.key;render();}
+}
+
+function handleImportCSV(e) {
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=(ev)=>{
+    const lines=ev.target.result.split('\n');
+    const newData=emptyGrid();
+    lines.forEach((line,r)=>{if(r>=ROWS)return;const cols=line.split(',');cols.forEach((c,ci)=>{if(ci<COLS)newData[r][ci]=c.replace(/^"|"$/g,'').trim();});});
+    updateCells(newData);notify('CSV imported ✓','success');render();
+  };
+  reader.readAsText(file);
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard(t) {
+  const recentFiles=[
+    {name:'Q2 Budget',date:'Jun 25, 2026',template:'budget'},
+    {name:'Sales Report',date:'Jun 22, 2026',template:'sales'},
+    {name:'Student Grades',date:'Jun 18, 2026',template:'grades'},
+  ];
+  return `
+  <div style="${s({maxWidth:'1100px',margin:'0 auto',padding:'40px 24px'})}">
+    <div style="margin-bottom:40px">
+      <h2 style="font-size:28px;font-weight:800;color:${t.text};margin-bottom:8px">Welcome to IB. Calc</h2>
+      <p style="color:${t.muted};font-size:15px">Professional spreadsheet software, right in your browser.</p>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:40px;flex-wrap:wrap">
+      ${[
+        {label:'New Spreadsheet',icon:'new',action:`state.view='spreadsheet';render();`,color:t.accent},
+        {label:'Open Saved',icon:'open',action:`handleLoad();state.view='spreadsheet';render();`,color:'#10b981'},
+        {label:'Import CSV',icon:'upload',action:`document.getElementById('csv-input').click()`,color:'#f59e0b'},
+        {label:'Upgrade to Premium',icon:'star',action:`state.view='upgrade';render();`,color:'#ec4899'},
+      ].map(({label,icon:ic,action,color})=>`
+        <button onclick="${action}" style="${s({display:'flex',alignItems:'center',gap:'10px',padding:'12px 20px',borderRadius:'12px',border:`1px solid ${t.border}`,background:t.surface,color:t.text,cursor:'pointer',fontWeight:'600',fontSize:'14px',boxShadow:'0 2px 8px #0001'})}">
+          <span style="color:${color}">${icon(ic,18)}</span>${label}
+        </button>`).join('')}
+    </div>
+    <div style="margin-bottom:40px">
+      <h3 style="font-size:16px;font-weight:700;color:${t.text};margin-bottom:16px">Recent Files</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+        ${recentFiles.map(f=>`
+          <div onclick="loadTemplate('${f.template}');render();" style="${s({padding:'18px 20px',borderRadius:'12px',border:`1px solid ${t.border}`,background:t.surface,cursor:'pointer'})}"
+            onmouseenter="this.style.boxShadow='0 4px 20px ${t.accent}22'" onmouseleave="this.style.boxShadow='none'">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <span style="color:${t.accent}">${icon('new',20)}</span>
+              <span style="font-weight:600;color:${t.text};font-size:14px">${f.name}</span>
+            </div>
+            <div style="color:${t.muted};font-size:12px">${f.date}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:16px;font-weight:700;color:${t.text};margin-bottom:16px">Templates</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+        ${Object.entries(TEMPLATES).map(([key,tpl])=>`
+          <div onclick="loadTemplate('${key}');render();" style="${s({padding:'20px',borderRadius:'12px',border:`1px solid ${t.border}`,background:t.surface,cursor:'pointer'})}"
+            onmouseenter="this.style.background='${t.accent}11';this.style.borderColor='${t.accent}'" onmouseleave="this.style.background='${t.surface}';this.style.borderColor='${t.border}'">
+            <div style="${s({width:'40px',height:'40px',borderRadius:'10px',background:t.accent+'22',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:'12px',color:t.accent})}">${icon('chart',20)}</div>
+            <div style="font-weight:700;color:${t.text};font-size:14px">${tpl.name}</div>
+            <div style="color:${t.muted};font-size:12px;margin-top:4px">Ready-to-use template</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ─── UPGRADE PAGE ─────────────────────────────────────────────────────────────
+function renderUpgrade(t) {
+  const f = state.upgradeForm;
+  const submitted = state.upgradeSubmitted;
+  return `
+  <div style="${s({maxWidth:'700px',margin:'0 auto',padding:'40px 24px'})}">
+    <button onclick="state.view='spreadsheet';render();" style="display:flex;align-items:center;gap:6px;color:${t.muted};background:none;border:none;cursor:pointer;margin-bottom:24px;font-size:14px">
+      ${icon('chevDown',14,t.muted)} Back
+    </button>
+    <div style="text-align:center;margin-bottom:40px">
+      <div style="${s({display:'inline-flex',alignItems:'center',gap:'8px',background:t.accent+'22',padding:'6px 16px',borderRadius:'99px',color:t.accent,fontWeight:'700',fontSize:'13px',marginBottom:'16px'})}">
+        ${icon('star',14,t.accent,t.accent)} PREMIUM
+      </div>
+      <h2 style="font-size:32px;font-weight:800;color:${t.text};margin-bottom:10px">Unlock IB. Calc Premium</h2>
+      <p style="color:${t.muted};font-size:16px">Advanced charts, AI assistant, cloud saving, and more.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:40px">
+      <div style="${s({padding:'24px',borderRadius:'16px',border:`1px solid ${t.border}`,background:t.surface})}">
+        <h3 style="font-size:16px;font-weight:700;color:${t.muted};margin-bottom:16px">Free</h3>
+        ${['Basic spreadsheet','5 sheets','CSV export','Formulas (SUM, AVG...)','50 rows × 26 cols'].map(f=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;color:${t.muted};font-size:14px">${icon('check',14,'#10b981')} ${f}</div>`).join('')}
+      </div>
+      <div style="${s({padding:'24px',borderRadius:'16px',border:`2px solid ${t.accent}`,background:t.accent+'08',position:'relative'})}">
+        <div style="${s({position:'absolute',top:'-12px',left:'50%',transform:'translateX(-50%)',background:t.accent,color:'#fff',fontSize:'11px',fontWeight:'700',padding:'3px 12px',borderRadius:'99px'})}">RECOMMENDED</div>
+        <h3 style="font-size:16px;font-weight:700;color:${t.accent};margin-bottom:16px">Premium</h3>
+        ${['Everything in Free','Advanced charts & graphs','AI spreadsheet assistant','Cloud saving','Unlimited rows','XLSX export','Advanced formulas','Collaboration tools','Priority support'].map(f=>`
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;color:${t.text};font-size:14px">${icon('check',14,t.accent)} ${f}</div>`).join('')}
+      </div>
+    </div>
+    ${!submitted ? `
+    <div style="${s({padding:'28px',borderRadius:'16px',border:`1px solid ${t.border}`,background:t.surface})}">
+      <h3 style="font-size:18px;font-weight:700;color:${t.text};margin-bottom:6px">Pay via Airtel Money</h3>
+      <div style="${s({padding:'12px 16px',borderRadius:'10px',background:t.accent+'15',marginBottom:'20px'})}">
+        <p style="color:${t.accent};font-weight:600;font-size:15px;margin:0">Send payment to: <strong>057399089</strong></p>
+        <p style="color:${t.muted};font-size:13px;margin:4px 0 0">After sending, fill in the form below. Your account will be activated within 24 hours.</p>
+      </div>
+      ${[['Full Name','name','text'],['Email Address','email','email'],['Payment Reference Number','ref','text'],['Payment Date','date','date']].map(([label,key,type])=>`
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-weight:600;font-size:13px;color:${t.muted};margin-bottom:6px">${label}</label>
+          <input type="${type}" value="${f[key]||''}" oninput="state.upgradeForm['${key}']=this.value"
+            style="${s({width:'100%',padding:'10px 14px',borderRadius:'10px',border:`1px solid ${t.border}`,background:t.bg,color:t.text,fontSize:'14px',boxSizing:'border-box',outline:'none'})}"/>
+        </div>`).join('')}
+      <button onclick="submitUpgradeForm()" style="${s({width:'100%',padding:'13px',borderRadius:'12px',background:t.accent,color:'#fff',fontWeight:'700',fontSize:'15px',border:'none',cursor:'pointer'})}">
+        I Have Paid →
+      </button>
+    </div>` : `
+    <div style="${s({textAlign:'center',padding:'40px',borderRadius:'16px',border:`1px solid ${t.border}`,background:t.surface})}">
+      <div style="${s({width:'60px',height:'60px',borderRadius:'50%',background:'#10b98122',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',color:'#10b981'})}">${icon('check',28,'#10b981','none',2.5)}</div>
+      <h3 style="font-size:20px;font-weight:700;color:${t.text};margin-bottom:8px">Payment Submitted!</h3>
+      <p style="color:${t.muted}">Your payment is pending review. You'll be activated within 24 hours.</p>
+      <div style="${s({marginTop:'20px',padding:'10px 20px',borderRadius:'10px',background:'#f59e0b22',color:'#f59e0b',fontWeight:'600',fontSize:'14px',display:'inline-block'})}">Status: Pending Review</div>
+      <br/><button onclick="state.view='spreadsheet';render();" style="${s({marginTop:'20px',padding:'10px 24px',borderRadius:'10px',background:t.accent,color:'#fff',border:'none',cursor:'pointer',fontWeight:'600'})}">Continue to IB. Calc</button>
+    </div>`}
+  </div>`;
+}
+
+function submitUpgradeForm() {
+  const f = state.upgradeForm;
+  if(!f.name||!f.email||!f.ref||!f.date){notify('Please fill all fields');return;}
+  state.payments=[...state.payments,{id:Date.now(),...f,status:'pending'}];
+  state.upgradeSubmitted=true;
+  render();
+}
+
+// ─── ADMIN ────────────────────────────────────────────────────────────────────
+function renderAdmin(t) {
+  if(!state.adminAuth) return `
+    <div style="${s({maxWidth:'900px',margin:'0 auto',padding:'40px 24px'})}">
+      <button onclick="state.view='spreadsheet';render();" style="display:flex;align-items:center;gap:6px;color:${t.muted};background:none;border:none;cursor:pointer;margin-bottom:24px;font-size:14px">
+        ${icon('chevDown',14,t.muted)} Back
+      </button>
+      <div style="${s({maxWidth:'360px',margin:'60px auto',padding:'32px',borderRadius:'16px',border:`1px solid ${t.border}`,background:t.surface})}">
+        <h3 style="font-size:20px;font-weight:700;color:${t.text};margin-bottom:20px;text-align:center">Admin Login</h3>
+        <input type="password" placeholder="Admin password" value="${state.adminPw}" oninput="state.adminPw=this.value"
+          style="${s({width:'100%',padding:'10px 14px',borderRadius:'10px',border:`1px solid ${t.border}`,background:t.bg,color:t.text,marginBottom:'14px',boxSizing:'border-box',outline:'none'})}"/>
+        <button onclick="if(state.adminPw==='ibcalc2026'){state.adminAuth=true;render();}else{notify('Wrong password');}"
+          style="${s({width:'100%',padding:'12px',borderRadius:'10px',background:t.accent,color:'#fff',border:'none',cursor:'pointer',fontWeight:'700'})}">Login</button>
+      </div>
+    </div>`;
+
+  const p = state.payments;
+  return `
+  <div style="${s({maxWidth:'900px',margin:'0 auto',padding:'40px 24px'})}">
+    <button onclick="state.view='spreadsheet';render();" style="display:flex;align-items:center;gap:6px;color:${t.muted};background:none;border:none;cursor:pointer;margin-bottom:24px;font-size:14px">
+      ${icon('chevDown',14,t.muted)} Back
+    </button>
+    <h2 style="font-size:24px;font-weight:800;color:${t.text};margin-bottom:24px">Admin Dashboard</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px">
+      ${[['Total Payments',p.length,t.accent],['Pending',p.filter(x=>x.status==='pending').length,'#f59e0b'],['Approved',p.filter(x=>x.status==='approved').length,'#10b981']].map(([label,val,color])=>`
+        <div style="${s({padding:'20px 24px',borderRadius:'14px',border:`1px solid ${t.border}`,background:t.surface})}">
+          <div style="font-size:28px;font-weight:800;color:${color}">${val}</div>
+          <div style="color:${t.muted};font-size:13px;margin-top:4px">${label}</div>
+        </div>`).join('')}
+    </div>
+    <div style="${s({borderRadius:'14px',border:`1px solid ${t.border}`,background:t.surface,overflow:'hidden'})}">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:${t.headerBg}">
+            ${['Name','Email','Reference','Date','Status','Actions'].map(h=>`<th style="${s({padding:'12px 16px',textAlign:'left',fontSize:'12px',fontWeight:'700',color:t.muted,textTransform:'uppercase',letterSpacing:'.05em'})}">${h}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${p.map(pay=>`
+            <tr style="border-top:1px solid ${t.border}">
+              <td style="${s({padding:'12px 16px',color:t.text,fontSize:'14px',fontWeight:'600'})}">${pay.name}</td>
+              <td style="${s({padding:'12px 16px',color:t.muted,fontSize:'13px'})}">${pay.email}</td>
+              <td style="${s({padding:'12px 16px',color:t.muted,fontSize:'12px',fontFamily:'monospace'})}">${pay.ref}</td>
+              <td style="${s({padding:'12px 16px',color:t.muted,fontSize:'13px'})}">${pay.date}</td>
+              <td style="padding:12px 16px">
+                <span style="${s({padding:'3px 10px',borderRadius:'99px',fontSize:'12px',fontWeight:'700',background:pay.status==='approved'?'#10b98122':pay.status==='rejected'?'#ef444422':'#f59e0b22',color:pay.status==='approved'?'#10b981':pay.status==='rejected'?'#ef4444':'#f59e0b'})}">${pay.status.toUpperCase()}</span>
+              </td>
+              <td style="padding:12px 16px">
+                <button onclick="state.payments=state.payments.map(x=>x.id===${pay.id}?{...x,status:'approved'}:x);if('${pay.email}'===state.paymentForm.email)state.isPremium=true;render();" style="padding:4px 12px;border-radius:6px;background:#10b98122;color:#10b981;border:none;cursor:pointer;font-size:12px;font-weight:700;margin-right:6px">Approve</button>
+                <button onclick="state.payments=state.payments.map(x=>x.id===${pay.id}?{...x,status:'rejected'}:x);render();" style="padding:4px 12px;border-radius:6px;background:#ef444422;color:#ef4444;border:none;cursor:pointer;font-size:12px;font-weight:700">Reject</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      ${p.length===0?`<div style="padding:40px;text-align:center;color:${t.muted}">No payments yet.</div>`:''}
+    </div>
+  </div>`;
+}
+
+// ─── SPREADSHEET ──────────────────────────────────────────────────────────────
+function renderSpreadsheet(t, cells, fmt, sheet) {
+  // Menu bar
+  const menus = {
+    File:[
+      {label:'New Spreadsheet',icon:'new',action:`state.sheets=[{id:1,name:'Sheet1',data:emptyGrid(),fmt:emptyFmt()}];state.activeSheet=0;state.history=[];state.future=[];state.activeMenu=null;render();`},
+      {label:'Save',icon:'save',action:`handleSave();state.activeMenu=null;render();`},
+      {label:'Load Saved',icon:'open',action:`handleLoad();state.activeMenu=null;render();`},
+      {label:'Export CSV',icon:'download',action:`handleExportCSV();state.activeMenu=null;render();`},
+      {label:'Import CSV',icon:'upload',action:`document.getElementById('csv-input').click();state.activeMenu=null;render();`},
+      {label:'Templates',icon:'star',action:`state.view='dashboard';state.activeMenu=null;render();`},
+    ],
+    Edit:[
+      {label:'Undo',icon:'undo',action:`handleUndo();state.activeMenu=null;render();`},
+      {label:'Redo',icon:'redo',action:`handleRedo();state.activeMenu=null;render();`},
+      {label:'Copy',icon:'copy',action:`handleCopy();state.activeMenu=null;render();`},
+      {label:'Cut',icon:'cut',action:`handleCut();state.activeMenu=null;render();`},
+      {label:'Paste',icon:'paste',action:`handlePaste();state.activeMenu=null;render();`},
+      {label:'Delete Cell',icon:'trash',action:`const nd=getCells().map(r=>[...r]);nd[state.selected.row][state.selected.col]='';updateCells(nd);state.activeMenu=null;render();`},
+    ],
+    View:[
+      {label:'Toggle Dark Mode',icon:state.dark?'sun':'moon',action:`state.dark=!state.dark;state.activeMenu=null;render();`},
+      {label:'Freeze Row',icon:'freeze',action:`state.frozenRows=state.frozenRows===state.selected.row+1?0:state.selected.row+1;state.activeMenu=null;render();`},
+      {label:'Freeze Column',icon:'freeze',action:`state.frozenCols=state.frozenCols===state.selected.col+1?0:state.selected.col+1;state.activeMenu=null;render();`},
+    ],
+    Insert:[
+      {label:'Add Sheet',icon:'plus',action:`addSheet();state.activeMenu=null;render();`},
+      {label:'Chart',icon:'chart',action:`if(!state.isPremium){state.view='upgrade';}else{state.showChart=true;}state.activeMenu=null;render();`,premium:true},
+    ],
+    Format:[
+      {label:'Bold',icon:'bold',action:`applyFmt('bold',!(getFmt()[state.selected.row]?.[state.selected.col]?.bold));state.activeMenu=null;render();`},
+      {label:'Italic',icon:'italic',action:`applyFmt('italic',!(getFmt()[state.selected.row]?.[state.selected.col]?.italic));state.activeMenu=null;render();`},
+      {label:'Underline',icon:'underline',action:`applyFmt('underline',!(getFmt()[state.selected.row]?.[state.selected.col]?.underline));state.activeMenu=null;render();`},
+    ],
+    Data:[
+      {label:'Sort A→Z',icon:'sort',action:`const nd=getCells().map(r=>[...r]);nd.sort((a,b)=>(a[state.selected.col]??'').toString().localeCompare((b[state.selected.col]??'').toString()));updateCells(nd);notify('Sorted A→Z');state.activeMenu=null;render();`},
+      {label:'Sort Z→A',icon:'sort',action:`const nd=getCells().map(r=>[...r]);nd.sort((a,b)=>(b[state.selected.col]??'').toString().localeCompare((a[state.selected.col]??'').toString()));updateCells(nd);notify('Sorted Z→A');state.activeMenu=null;render();`},
+    ],
+    Tools:[
+      {label:'Admin Dashboard',icon:'settings',action:`state.view='admin';state.activeMenu=null;render();`},
+    ],
+    Help:[
+      {label:'Keyboard Shortcuts',icon:'info',action:`notify('Ctrl+C Copy | Ctrl+V Paste | Ctrl+Z Undo | Ctrl+S Save | Delete Clear');state.activeMenu=null;render();`},
+    ],
+  };
+
+  const menuBar = Object.entries(menus).map(([name,items])=>`
+    <div style="position:relative">
+      <button onclick="state.activeMenu=state.activeMenu==='${name}'?null:'${name}';render();" style="${s({padding:'4px 10px',fontSize:'13px',color:state.activeMenu===name?t.accent:t.text,background:state.activeMenu===name?t.accent+'18':'transparent',border:'none',cursor:'pointer',borderRadius:'6px',fontWeight:'500'})}">${name}</button>
+      ${state.activeMenu===name?`
+        <div style="${s({position:'absolute',top:'100%',left:'0',minWidth:'200px',background:t.menuBg,border:`1px solid ${t.border}`,borderRadius:'10px',boxShadow:'0 8px 30px #0002',zIndex:'999',padding:'4px 0',marginTop:'2px'})}">
+          ${items.map(item=>`
+            <button onclick="${item.action}" style="${s({width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'8px 14px',background:'none',border:'none',color:t.text,cursor:'pointer',fontSize:'13px',textAlign:'left'})}"
+              onmouseenter="this.style.background='${t.accent}15'" onmouseleave="this.style.background='none'">
+              <span style="color:${t.muted}">${icon(item.icon,14)}</span>
+              ${item.label}
+              ${item.premium&&!state.isPremium?`<span style="${s({marginLeft:'auto',fontSize:'10px',background:'#f59e0b22',color:'#f59e0b',padding:'2px 6px',borderRadius:'4px',fontWeight:'700'})}">PRO</span>`:''}
+            </button>`).join('')}
+        </div>`:''}
+    </div>`).join('');
+
+  const curFmt = fmt[state.selected.row]?.[state.selected.col] || {};
+
+  // Build the grid
+  const colHeaders = Array.from({length:COLS},(_,c)=>`
+    <th onclick="state.selection={r1:0,c1:${c},r2:${ROWS-1},c2:${c}};state.selected={row:0,col:${c}};render();"
+      style="${s({width:state.colWidths[c]+'px',height:'24px',background:state.selection&&c>=state.selection.c1&&c<=state.selection.c2?t.accent+'22':t.headerBg,border:`1px solid ${t.border}`,fontSize:'11px',fontWeight:'700',color:t.muted,position:'sticky',top:'0',zIndex:'10',cursor:'pointer',userSelect:'none'})}">
+      ${colIndexToLetter(c)}
+    </th>`).join('');
+
+  const rows = Array.from({length:ROWS},(_,r)=>{
+    const isRowSel = state.selection&&r>=state.selection.r1&&r<=state.selection.r2;
+    const cells2D = getCells();
+    const tds = Array.from({length:COLS},(_,c)=>{
+      const isEd = state.editCell?.row===r&&state.editCell?.col===c;
+      const isSel = state.selection?r>=state.selection.r1&&r<=state.selection.r2&&c>=state.selection.c1&&c<=state.selection.c2:r===state.selected.row&&c===state.selected.col;
+      const isActive = r===state.selected.row&&c===state.selected.col;
+      const f = fmt[r]?.[c]||{};
+      const dv = isEd ? state.editVal : getDisplayVal(r,c);
+      const highlight = state.searchTerm && !isEd && dv.toLowerCase().includes(state.searchTerm.toLowerCase());
+
+      const cellStyle = s({
+        width:state.colWidths[c]+'px',
+        minWidth:state.colWidths[c]+'px',
+        maxWidth:state.colWidths[c]+'px',
+        height:state.rowHeights[r]+'px',
+        padding:'0 4px',
+        border:`1px solid ${isSel?t.selBorder:t.border}`,
+        background:isSel?t.selBg:(isActive&&!isEd?t.selBg+'88':(f.bgColor||(highlight?'#fef08a':(r%2===0?t.rowBg:t.altRow)))),
+        boxShadow:isActive?`inset 0 0 0 2px ${t.selBorder}`:'none',
+        cursor:'cell',
+        userSelect:'none',
+        position:'relative',
+        overflow:'hidden',
+        fontWeight:f.bold?'bold':'normal',
+        fontStyle:f.italic?'italic':'normal',
+        textDecoration:f.underline?'underline':'none',
+        color:f.color||t.text,
+        fontSize:(f.fontSize||state.fontSize)+'px',
+        textAlign:f.align||'left',
+      });
+
+      if(isEd) {
+        return `<td style="${cellStyle}" onclick="state.selected={row:${r},col:${c}};state.selection=null;state.activeMenu=null;" ondblclick="startEdit(${r},${c});render();">
+          <input id="cell-edit-input" value="${(state.editVal||'').replace(/"/g,'&quot;')}"
+            oninput="state.editVal=this.value;state.formulaBar=this.value;"
+            onblur="commitEdit();render();"
+            onkeydown="handleCellInputKey(event,${r},${c})"
+            style="${s({width:'100%',height:'100%',border:'none',outline:'none',background:'transparent',fontSize:(f.fontSize||state.fontSize)+'px',fontWeight:f.bold?'bold':'normal',fontStyle:f.italic?'italic':'normal',color:t.accent,padding:'0'})}"/>
+        </td>`;
+      }
+      return `<td style="${cellStyle}"
+        onclick="state.selected={row:${r},col:${c}};state.selection=null;state.activeMenu=null;render();"
+        ondblclick="startEdit(${r},${c});render();"
+        onmousedown="if(event.shiftKey){state.selection={r1:state.selection?.r1??state.selected.row,c1:state.selection?.c1??state.selected.col,r2:${r},c2:${c}};render();}">
+        <span style="display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;line-height:${state.rowHeights[r]}px">${escHtml(dv)}</span>
+      </td>`;
+    }).join('');
+
+    return `<tr>
+      <td onclick="state.selection={r1:${r},c1:0,r2:${r},c2:${COLS-1}};state.selected={row:${r},col:0};render();"
+        style="${s({width:'40px',height:state.rowHeights[r]+'px',background:isRowSel?t.accent+'22':t.headerBg,border:`1px solid ${t.border}`,fontSize:'11px',color:t.muted,textAlign:'center',position:'sticky',left:'0',zIndex:'5',cursor:'pointer',userSelect:'none'})}">${r+1}</td>
+      ${tds}
+    </tr>`;
+  }).join('');
+
+  const sheetTabs = state.sheets.map((sh,i)=>`
+    <div style="${s({display:'flex',alignItems:'center',gap:'4px',padding:'0 12px',height:'28px',borderRadius:'6px 6px 0 0',marginRight:'2px',background:i===state.activeSheet?t.surface:'transparent',border:i===state.activeSheet?`1px solid ${t.border}`:'1px solid transparent',cursor:'pointer',fontSize:'13px',color:i===state.activeSheet?t.accent:t.muted,fontWeight:i===state.activeSheet?'700':'400'})}"
+      onclick="commitEdit();state.activeSheet=${i};render();">
+      ${state.renaming===i?`
+        <input id="rename-input" value="${sh.name}"
+          oninput="state.renameVal=this.value"
+          onblur="state.sheets=state.sheets.map((s,idx)=>idx===${i}?{...s,name:state.renameVal||s.name}:s);state.renaming=null;render();"
+          onkeydown="if(event.key==='Enter'){state.sheets=state.sheets.map((s,idx)=>idx===${i}?{...s,name:state.renameVal||s.name}:s);state.renaming=null;render();}"
+          style="width:70px;font-size:12px;border:none;outline:none;background:transparent;color:${t.text}"/>`
+        :`<span ondblclick="event.stopPropagation();state.renaming=${i};state.renameVal='${sh.name}';render();">${sh.name}</span>`}
+      ${state.sheets.length>1?`<button onclick="event.stopPropagation();deleteSheet(${i});render();" style="background:none;border:none;cursor:pointer;color:${t.muted};padding:0;line-height:1;margin-left:4px">${icon('x',12)}</button>`:''}
+    </div>`).join('');
+
+  return `
+  <div style="${s({display:'flex',flexDirection:'column',height:'calc(100vh - 56px)',overflow:'hidden'})}">
+    <!-- Menu Bar -->
+    <div style="${s({display:'flex',alignItems:'center',background:t.toolbarBg,borderBottom:`1px solid ${t.border}`,padding:'0 8px',height:'32px',position:'relative',zIndex:'20'})}" onclick="event.target===this&&(state.activeMenu=null,render())">
+      ${menuBar}
+    </div>
+    <!-- Toolbar -->
+    <div style="${s({display:'flex',alignItems:'center',gap:'2px',background:t.toolbarBg,borderBottom:`1px solid ${t.border}`,padding:'4px 8px',height:'38px',overflowX:'auto'})}">
+      ${toolBtn(t,'new','New',`state.sheets=[{id:1,name:'Sheet1',data:emptyGrid(),fmt:emptyFmt()}];state.activeSheet=0;render();`)}
+      ${toolBtn(t,'save','Save (Ctrl+S)',`handleSave();`)}
+      ${toolBtn(t,'download','Export CSV',`handleExportCSV();`)}
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      ${toolBtn(t,'undo','Undo (Ctrl+Z)',`handleUndo();render();`)}
+      ${toolBtn(t,'redo','Redo (Ctrl+Y)',`handleRedo();render();`)}
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      ${toolBtn(t,'copy','Copy (Ctrl+C)',`handleCopy();render();`)}
+      ${toolBtn(t,'paste','Paste (Ctrl+V)',`handlePaste();render();`)}
+      ${toolBtn(t,'cut','Cut',`handleCut();render();`)}
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      ${toolBtn(t,'bold','Bold',`applyFmt('bold',!(getFmt()[state.selected.row]?.[state.selected.col]?.bold));render();`,curFmt.bold)}
+      ${toolBtn(t,'italic','Italic',`applyFmt('italic',!(getFmt()[state.selected.row]?.[state.selected.col]?.italic));render();`,curFmt.italic)}
+      ${toolBtn(t,'underline','Underline',`applyFmt('underline',!(getFmt()[state.selected.row]?.[state.selected.col]?.underline));render();`,curFmt.underline)}
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      ${toolBtn(t,'alignLeft','Align Left',`applyFmt('align','left');render();`)}
+      ${toolBtn(t,'alignCenter','Align Center',`applyFmt('align','center');render();`)}
+      ${toolBtn(t,'alignRight','Align Right',`applyFmt('align','right');render();`)}
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      <select title="Font size" onchange="state.fontSize=+this.value;applyFmt('fontSize',+this.value);render();"
+        style="${s({fontSize:'12px',padding:'2px 4px',borderRadius:'6px',border:`1px solid ${t.border}`,background:t.surface,color:t.text,width:'52px'})}">
+        ${[10,11,12,13,14,16,18,20,24].map(sz=>`<option${sz===state.fontSize?' selected':''}>${sz}</option>`).join('')}
+      </select>
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      <label title="Cell background color" style="display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:6px;cursor:pointer;color:${t.muted}">
+        ${icon('paint',14)} <input type="color" onchange="applyFmt('bgColor',this.value);render();" style="width:20px;height:16px;border:none;padding:0;cursor:pointer"/>
+      </label>
+      <label title="Text color" style="display:flex;align-items:center;gap:4px;padding:2px 6px;border-radius:6px;cursor:pointer;color:${t.muted}">
+        <span style="font-size:10px;font-weight:700">A</span><input type="color" onchange="applyFmt('color',this.value);render();" style="width:20px;height:16px;border:none;padding:0;cursor:pointer"/>
+      </label>
+      <div style="width:1px;height:22px;background:${t.border};margin:0 4px"></div>
+      ${toolBtn(t,'sort','Sort A→Z',`const nd=getCells().map(r=>[...r]);nd.sort((a,b)=>(a[state.selected.col]??'').toString().localeCompare((b[state.selected.col]??'').toString()));updateCells(nd);notify('Sorted');render();`)}
+      ${toolBtn(t,'chart','Insert Chart'+(state.isPremium?'':' (Premium)'),state.isPremium?`state.showChart=true;render();`:`state.view='upgrade';render();`,false,!state.isPremium)}
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${icon('search',14,t.muted)}
+        <input value="${state.searchTerm}" oninput="state.searchTerm=this.value;render();" placeholder="Search..."
+          style="${s({fontSize:'12px',padding:'3px 8px',borderRadius:'6px',border:`1px solid ${t.border}`,background:t.surface,color:t.text,width:'120px',outline:'none'})}"/>
+      </div>
+    </div>
+    <!-- Formula Bar -->
+    <div style="${s({display:'flex',alignItems:'center',gap:'8px',background:t.toolbarBg,borderBottom:`1px solid ${t.border}`,padding:'4px 12px',height:'30px'})}">
+      <div style="${s({minWidth:'60px',padding:'2px 10px',borderRadius:'6px',background:t.surface,border:`1px solid ${t.border}`,fontSize:'12px',color:t.accent,fontWeight:'700',textAlign:'center'})}">
+        ${cellId(state.selected.row, state.selected.col)}
+      </div>
+      <div style="color:${t.muted};font-size:16px;font-weight:300">fx</div>
+      <input id="formula-bar" value="${escHtml(state.formulaBar)}"
+        oninput="state.formulaBar=this.value;if(state.editCell){state.editVal=this.value;}else{startEdit(state.selected.row,state.selected.col);state.editVal=this.value;}"
+        onblur="commitEdit();render();"
+        style="${s({flex:'1',padding:'2px 10px',borderRadius:'6px',border:`1px solid ${t.border}`,background:t.surface,color:t.text,fontSize:'13px',outline:'none'})}"
+        placeholder="Enter value or formula..."/>
+    </div>
+    <!-- Grid -->
+    <div style="${s({flex:'1',overflow:'auto',background:t.gridBg})}" onclick="event.target===this&&(state.activeMenu=null)">
+      <table style="border-collapse:collapse;table-layout:fixed">
+        <colgroup>
+          <col style="width:40px"/>
+          ${Array.from({length:COLS},(_,c)=>`<col style="width:${state.colWidths[c]}px"/>`).join('')}
+        </colgroup>
+        <thead>
+          <tr>
+            <th style="${s({width:'40px',height:'24px',background:t.headerBg,border:`1px solid ${t.border}`,fontSize:'11px',color:t.muted,position:'sticky',top:'0',zIndex:'10'})}"></th>
+            ${colHeaders}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <!-- Sheet Tabs -->
+    <div style="${s({display:'flex',alignItems:'center',background:t.toolbarBg,borderTop:`1px solid ${t.border}`,padding:'0 8px',height:'34px',overflowX:'auto'})}">
+      ${sheetTabs}
+      <button onclick="addSheet();render();" title="Add sheet" style="display:flex;align-items:center;padding:4px 8px;background:none;border:none;cursor:pointer;color:${t.muted};border-radius:6px">
+        ${icon('plus',16)}
+      </button>
+      <div style="margin-left:auto;font-size:12px;color:${t.muted};padding-right:8px">
+        ${state.frozenRows>0?`<span style="margin-right:8px;color:${t.accent}">↔ ${state.frozenRows} row(s) frozen</span>`:''}
+        ${state.frozenCols>0?`<span style="color:${t.accent}">↕ ${state.frozenCols} col(s) frozen</span>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toolBtn(t, iconName, title, action, active=false, premium=false) {
+  return `<button title="${title}" onclick="${action}"
+    style="${s({padding:'4px 7px',borderRadius:'6px',border:'none',background:active?t.accent+'33':'transparent',color:active?t.accent:t.muted,cursor:'pointer',display:'flex',alignItems:'center',gap:'4px',position:'relative'})}"
+    onmouseenter="this.style.background='${t.accent}22'" onmouseleave="this.style.background='${active?t.accent+'33':'transparent'}'">
+    ${icon(iconName,15)}
+    ${premium?`<span style="position:absolute;top:0;right:0;width:8px;height:8px;background:#f59e0b;border-radius:50%"></span>`:''}
+  </button>`;
+}
+
+function handleCellInputKey(e, row, col) {
+  if(e.key==='Enter'){e.preventDefault();commitEdit();state.selected={row:Math.min(row+1,ROWS-1),col};render();}
+  else if(e.key==='Escape'){state.editCell=null;state.editVal='';render();}
+  else if(e.key==='Tab'){e.preventDefault();commitEdit();state.selected={row,col:Math.min(col+1,COLS-1)};render();}
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
